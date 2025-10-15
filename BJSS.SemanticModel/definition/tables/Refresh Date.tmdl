@@ -1,0 +1,31 @@
+table 'Refresh Date'
+	isHidden
+	lineageTag: fc1f9aab-e3b5-460f-8931-99edde5c0ed5
+
+	column 'Refresh Date_Time'
+		dataType: string
+		isHidden
+		lineageTag: fbaa1a99-34f9-4c36-bf11-fd50c25a4c37
+		summarizeBy: none
+		sourceColumn: Refresh Date_Time
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Refresh Date' = m
+		mode: import
+		source =
+				let
+				    Source = DateTime.LocalNow(),
+				    #"Converted to Table" = #table(1, {{Source}}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Converted to Table",{{"Column1", "Refresh Date_Time"}})
+				in
+				    #"Renamed Columns"
+
+	changedProperty = IsHidden
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

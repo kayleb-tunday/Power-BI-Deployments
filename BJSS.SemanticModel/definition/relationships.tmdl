@@ -1,0 +1,16 @@
+relationship e337c755-926a-dbf6-e60d-9acdaa36fdc4
+	fromColumn: fact_retail.'Customer ID'
+	toColumn: dim_customer.'Customer ID'
+
+relationship 2f714ff9-b4b6-1ea7-8916-a4aebad9fdaf
+	fromColumn: fact_retail.'Country ID'
+	toColumn: dim_country.'Country ID'
+
+relationship d21de106-60ad-27f8-539b-bf4c6c577f73
+	fromColumn: fact_retail.InvoiceDate
+	toColumn: Date.Date
+
+relationship AutoDetected_5020d20b-a4a9-4a4e-9a88-aecb9b3d2a78
+	fromColumn: fact_retail.StockCode
+	toColumn: dim_product.StockCode
+

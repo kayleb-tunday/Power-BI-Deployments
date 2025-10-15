@@ -1,0 +1,161 @@
+table fact_retail
+	lineageTag: 246c8403-a04b-4a5a-8da5-41ee80125d7f
+
+	measure InvoicePrice = (CALCULATE(SUM(fact_retail[Price]), fact_retail[InvoiceType] = "Purchase")) - (CALCULATE(SUM(fact_retail[Price]), fact_retail[InvoiceType] = "Cancellation"))
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		lineageTag: 3fe64c61-5236-4ccd-87c5-ab1d44850581
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	measure '% Cancellations' = DIVIDE(CALCULATE(COUNT(fact_retail[Invoice]),fact_retail[InvoiceType] = "Cancellation"), CALCULATE(COUNT(fact_retail[Invoice]),fact_retail[InvoiceType] = "Purchase"))
+		lineageTag: fc652bef-d122-486c-adab-1f8f5bdf13fe
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure TotalCancellations = CALCULATE(COUNT(fact_retail[Invoice]),fact_retail[InvoiceType] = "Cancellation")
+		formatString: 0
+		lineageTag: 16e622bb-7470-4a22-aa16-e79915a7b9b2
+
+	measure TotalPurchases = CALCULATE(COUNT(fact_retail[Invoice]),fact_retail[InvoiceType] = "Purchase")
+		formatString: 0
+		lineageTag: bfa15aa8-a4dd-495d-a970-eec3cf44233c
+
+	column Invoice
+		dataType: string
+		lineageTag: 420b30db-3965-4c0f-bf32-a3efe44bd68c
+		summarizeBy: none
+		sourceColumn: Invoice
+
+		annotation SummarizationSetBy = Automatic
+
+	column StockCode
+		dataType: string
+		lineageTag: 0a44f148-b31d-4e97-a0b6-8b1403f74fc0
+		summarizeBy: none
+		sourceColumn: StockCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: int64
+		formatString: 0
+		lineageTag: 74573954-7d99-404a-b4df-ef91cf2ddeae
+		summarizeBy: none
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = User
+
+	column InvoiceDate
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: fec183fe-7c3a-45f5-b632-f94356e0fca9
+		summarizeBy: none
+		sourceColumn: InvoiceDate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Price
+		dataType: double
+		formatString: "£"#,0.00;-"£"#,0.00;"£"#,0.00
+		lineageTag: 309a0d5b-058c-4866-a27d-516719b454c8
+		summarizeBy: none
+		sourceColumn: Price
+
+		annotation SummarizationSetBy = User
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-GB"}
+
+	column 'Customer ID'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: b83c823f-9de5-4e43-8ffb-b222f53815a4
+		summarizeBy: none
+		sourceColumn: Customer ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceTime
+		dataType: dateTime
+		formatString: Long Time
+		lineageTag: 74c0d9c2-a6d7-40b9-8738-9a485f878ec6
+		summarizeBy: none
+		sourceColumn: InvoiceTime
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Time
+
+	column 'Country ID'
+		dataType: string
+		isHidden
+		lineageTag: bc7e73f8-778e-484a-a0f8-9ad7158e877b
+		summarizeBy: none
+		sourceColumn: Country ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Product_ID
+		dataType: string
+		isHidden
+		lineageTag: 9d67c767-f6e3-47bc-ae48-ee3361093737
+		summarizeBy: none
+		sourceColumn: Product_ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column InvoiceType = IF(LEFT([Invoice], 1) = "C", "Cancellation", "Purchase")
+		lineageTag: 7c543e37-0c3b-4f1c-b2f8-ee3c5b26241a
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column TimeBuckets
+		dataType: string
+		lineageTag: 0e9ea239-68ab-4adf-b494-7c1750a6f7b4
+		summarizeBy: none
+		sourceColumn: TimeBuckets
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_retail = m
+		mode: import
+		source = ```
+				let
+				    Source = online_retail_II,
+				    #"Duplicated Column" = Table.DuplicateColumn(Source, "InvoiceDate", "InvoiceTime"),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Duplicated Column",{{"InvoiceDate", type date}, {"InvoiceTime", type time}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Description", "Country"}),
+				    #"Added Time Buckets" = Table.AddColumn(#"Removed Columns", "TimeBuckets", each if [InvoiceTime] >= #time(0, 0, 0) and [InvoiceTime] <= #time(3, 0, 0) then "Midnight - 3am"
+				else
+				if [InvoiceTime] >= #time(3, 0, 0) and [InvoiceTime] <= #time(6, 0, 0) then "3am - 6am"
+				else
+				if [InvoiceTime] >= #time(6, 0, 0) and [InvoiceTime] <= #time(9, 0, 0) then "6am - 9am"
+				else
+				if [InvoiceTime] >= #time(9, 0, 0) and [InvoiceTime] <= #time(12, 0, 0) then "9am - 12 noon"
+				else
+				if [InvoiceTime] >= #time(12, 0, 0) and [InvoiceTime] <= #time(15, 0, 0) then "12noon - 3pm"
+				else
+				if [InvoiceTime] >= #time(15, 0, 0) and [InvoiceTime] <= #time(18, 0, 0) then "3pm - 6pm"
+				else
+				if [InvoiceTime] >= #time(18, 0, 0) and [InvoiceTime] <= #time(21, 0, 0) then "6pm - 9pm"
+				else
+				if [InvoiceTime] >= #time(21, 0, 0) and [InvoiceTime] <= #time(23, 59, 59) then "9pm - Midnight"
+				else 
+				null, type text)
+				in
+				    #"Added Time Buckets"
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
