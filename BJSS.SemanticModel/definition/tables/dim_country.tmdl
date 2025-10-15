@@ -1,0 +1,37 @@
+table dim_country
+	lineageTag: 74a03330-c1f5-4247-8ba6-76c92f5c269c
+
+	column Country
+		dataType: string
+		lineageTag: 2cfa14d4-50a3-4262-b6de-97861da501ea
+		summarizeBy: none
+		sourceColumn: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Country ID'
+		dataType: string
+		isHidden
+		lineageTag: ee350534-4c30-4071-a12e-0957d48f63ee
+		summarizeBy: none
+		sourceColumn: Country ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_country = m
+		mode: import
+		source =
+				let
+				    Source = online_retail_II,
+				    #"Removed Other Columns" = Table.SelectColumns(Source,{"Country", "Country ID"}),
+				    #"Grouped Rows" = Table.Group(#"Removed Other Columns", {"Country", "Country ID"}, {}),
+				    #"Replaced Value" = Table.ReplaceValue(#"Grouped Rows", each [Country], each if [Country] = "RSA" then "South Africa" else if [Country] = "EIRE" then "Ireland" else [Country],Replacer.ReplaceText,{"Country"})
+				in
+				    #"Replaced Value"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
