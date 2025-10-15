@@ -1,0 +1,43 @@
+table dim_customer
+	lineageTag: 430b343d-c06e-4364-92fd-66b8ad4a2c4f
+
+	column 'Customer ID'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 022b83a5-4114-40ac-ba23-07fc7a39ece4
+		summarizeBy: none
+		sourceColumn: Customer ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Full Name'
+		dataType: string
+		lineageTag: 9a65bb53-4b2e-4d96-b095-d09a69241ea5
+		summarizeBy: none
+		sourceColumn: Full Name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_customer = m
+		mode: import
+		source =
+				let
+				    Source = online_retail_II,
+				    #"Removed Other Columns" = Table.SelectColumns(Source,{"Customer ID"}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Removed Other Columns",{{"Customer ID", Int64.Type}}),
+				    #"Filtered Rows <> null" = Table.SelectRows(#"Changed Type", each [Customer ID] <> null),
+				    // To get 1 row per value
+				    #"Grouped Rows" = Table.Group(#"Filtered Rows <> null", {"Customer ID"}, {}),
+				    // This step bring in dummy customer names that I have dynamically generated. In real life scenario, this information should be provided.
+				    #"Merged Queries" = Table.NestedJoin(#"Grouped Rows", {"Customer ID"}, dummy_customers, {"Index"}, "Query1", JoinKind.LeftOuter),
+				    #"Expanded Query1" = Table.ExpandTableColumn(#"Merged Queries", "Query1", {"Full Name"}, {"Full Name"})
+				in
+				    #"Expanded Query1"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
