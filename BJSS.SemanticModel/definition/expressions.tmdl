@@ -1,0 +1,63 @@
+expression online_retail_II =
+		let
+		    Source = Csv.Document(File.Contents("C:\Users\Caleb Olaleye\Desktop\archive\online_retail_II.csv"),[Delimiter=",", Columns=8, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+		    #"Trimmed Text" = Table.TransformColumns(Table.TransformColumnTypes(#"Promoted Headers", {{"Quantity", type text}, {"InvoiceDate", type text}, {"Price", type text}, {"Customer ID", type text}}, "en-GB"),{{"Invoice", Text.Trim, type text}, {"StockCode", Text.Trim, type text}, {"Description", Text.Trim, type text}, {"Quantity", Text.Trim, type text}, {"InvoiceDate", Text.Trim, type text}, {"Price", Text.Trim, type text}, {"Customer ID", Text.Trim, type text}, {"Country", Text.Trim, type text}}),
+		    #"Cleaned Text" = Table.TransformColumns(#"Trimmed Text",{{"Invoice", Text.Clean, type text}, {"StockCode", Text.Clean, type text}, {"Description", Text.Clean, type text}, {"Quantity", Text.Clean, type text}, {"InvoiceDate", Text.Clean, type text}, {"Price", Text.Clean, type text}, {"Customer ID", Text.Clean, type text}, {"Country", Text.Clean, type text}}),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Cleaned Text",{{"Invoice", type text}, {"StockCode", type text}, {"Description", type text}, {"Quantity", Int64.Type}, {"InvoiceDate", type datetime}, {"Price", type number}, {"Customer ID", Int64.Type}, {"Country", type text}}),
+		    #"Filtered Rows" = Table.SelectRows(#"Changed Type", each ([Description] <> "") and ([Customer ID] <> null)),
+		    // This column was made up bu hashing each country, to make a primary key for dim_country
+		    #"Added Country ID" = Table.AddColumn(#"Filtered Rows", "Country ID", each Text.Combine(List.Transform(Text.ToList([Country]), each Text.From(Character.ToNumber(_))), ""), type text),
+		    // This column has been created because there have been mismatches between StockCode and Description, so this column gives a distinct ID for each description.
+		    #"Added Product_ID" = Table.AddColumn(#"Added Country ID", "Product_ID", each Text.Combine(List.Transform(Text.ToList([Description]), each Text.From(Character.ToNumber(_))), ""), type text)
+		in
+		    #"Added Product_ID"
+	lineageTag: 8d7673b1-6042-46b2-b892-772e82ec6d02
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression dummy_customers =
+		let
+		    // Number of random full names to generate
+		    NumberOfRandomNames = 6000,
+		
+		    // Lists of first names and surnames
+		    FirstNames = {"John", "Jane", "Alex", "Emily", "Chris", "Katie", "Michael", "Sarah", "David", "Laura", "Peter", "Lisa", "Paul", "Emma", "Robert", "Anna", "James", "Mia", "William", "Olivia"},
+		    Surnames = {"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin"},
+		
+		    // Function to generate a random first name
+		    GetRandomFirstName = () => FirstNames{Number.RoundDown(Number.RandomBetween(0, List.Count(FirstNames) - 1))},
+		
+		    // Function to generate a random surname
+		    GetRandomSurname = () => Surnames{Number.RoundDown(Number.RandomBetween(0, List.Count(Surnames) - 1))},
+		
+		    // Generate a list of random full names
+		    RandomFullNames = List.Transform({1..NumberOfRandomNames}, each GetRandomFirstName() & " " & GetRandomSurname()),
+		
+		    // Convert the list to a table
+		    RandomFullNamesTable = Table.FromList(RandomFullNames, Splitter.SplitByNothing(), {"Full Name"}),
+		    #"Added Index" = Table.AddIndexColumn(RandomFullNamesTable, "Index", 12300, 1, Int64.Type),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Added Index",{{"Full Name", type text}})
+		    in
+		    #"Changed Type"
+	lineageTag: 89d3acde-609e-4b32-9c2a-1053d856f03c
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression dim_product_ =
+		let
+		    Source = online_retail_II,
+		    #"Removed Other Columns" = Table.SelectColumns(Source,{"StockCode", "Description", "InvoiceDate", "Product_ID"}),
+		    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns", {"Product_ID"})
+		in
+		    #"Removed Duplicates"
+	lineageTag: af3b4581-c20e-425a-a79e-092494c93dd6
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

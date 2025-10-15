@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "BJSS"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "1170b554-fdb6-a801-4937-71e8fa2da407"
+  }
+}

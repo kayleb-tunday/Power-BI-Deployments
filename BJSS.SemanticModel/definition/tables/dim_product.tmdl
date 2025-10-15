@@ -1,0 +1,33 @@
+table dim_product
+	lineageTag: e4182736-a649-4ddc-a63e-3cc82d01efa2
+
+	column StockCode
+		dataType: string
+		lineageTag: dcc4de7d-cea8-45cb-b517-20d6cc3288a8
+		summarizeBy: none
+		sourceColumn: StockCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: e2d45bb6-268e-4672-9339-43ced5fa1ce1
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_product = m
+		mode: import
+		source =
+				let
+				    Source = online_retail_II,
+				    #"Removed Other Columns" = Table.SelectColumns(Source,{"StockCode", "Description"}),
+				    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns", {"StockCode"})
+				in
+				    #"Removed Duplicates"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
